@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f2eb">
+  <title>Connexion | Atelier</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="app.js" defer></script>
+</head>
+<body class="auth-page">
+  <main class="auth-layout">
+    <section class="welcome-panel" aria-label="Bienvenue">
+      <a class="wordmark" href="login.html"><span class="wordmark-mark">a.</span> atelier</a>
+      <div class="welcome-copy">
+        <p class="eyebrow">VOTRE ESPACE PERSONNEL</p>
+        <h1>Un endroit<br>à vous.</h1>
+        <p class="welcome-note">Retrouvez votre espace en quelques instants.</p>
+      </div>
+      <span class="panel-index">01 <span></span> 02</span>
+    </section>
+
+    <section class="form-panel" aria-labelledby="form-title">
+      <div class="form-wrap">
+        <div class="form-heading">
+          <p class="eyebrow" id="form-kicker">RAVI DE VOUS REVOIR</p>
+          <h2 id="form-title">Connexion</h2>
+          <p class="form-intro" id="form-intro">Connectez-vous pour accéder à votre espace.</p>
+        </div>
+
+        <div class="mode-switch" role="group" aria-label="Type de formulaire">
+          <button class="mode-button is-active" type="button" data-mode="login" aria-pressed="true">Connexion</button>
+          <button class="mode-button" type="button" data-mode="register" aria-pressed="false">Créer un compte</button>
+        </div>
+
+        <form id="auth-form" novalidate>
+          <label class="field">
+            <span>Adresse e-mail</span>
+            <input id="email" name="email" type="email" autocomplete="email" placeholder="vous@exemple.fr" required>
+          </label>
+          <label class="field">
+            <span>Mot de passe</span>
+            <input id="password" name="password" type="password" autocomplete="current-password" placeholder="8 caractères minimum" minlength="8" required>
+          </label>
+          <p class="form-message" id="form-message" role="status" aria-live="polite"></p>
+          <button class="submit-button" id="submit-button" type="submit">Se connecter <span aria-hidden="true">↗</span></button>
+        </form>
+        <p class="form-footnote">En continuant, vous accédez à un espace de démonstration.</p>
+      </div>
+      <span class="corner-note">ESPACE MEMBRE&nbsp; · &nbsp;2026</span>
+    </section>
+  </main>
+</body>
+</html>
