@@ -1,6 +1,6 @@
 # Atelier
 
-Authentification HTML/CSS/JS servie par Node.js 24 ou plus récent. SQLite est fourni par Node.js, aucune dépendance supplémentaire n'est requise.
+Authentification HTML/CSS/JS servie par Node.js 24 ou plus récent. Les comptes sont enregistrés dans `db.json` par JSON Server. `npm start` lance le site sur le port 3000 et l'API JSON Server sur le port local 3001.
 
 Générez le poivre secret et créez `.env` à la racine :
 
@@ -9,6 +9,8 @@ node -e "console.log('AUTH_PEPPER=' + require('node:crypto').randomBytes(32).toS
 npm start
 ```
 
-Ouvrez ensuite `http://localhost:3000`. La base est créée dans `data/users.sqlite`.
+Ouvrez ensuite `http://localhost:3000`. Le fichier `db.json` est créé automatiquement s'il n'existe pas. L'API JSON Server écoute uniquement sur `127.0.0.1` et n'est pas exposée au réseau.
 
-La table `users` contient `email`, `password_hash` et `password_salt` (ainsi qu'un identifiant et la date de création). Le mot de passe est dérivé avec scrypt à partir du mot de passe combiné au poivre serveur; le sel aléatoire propre à chaque compte est stocké séparément. Le poivre reste dans `.env` et n'est jamais enregistré en base.
+Chaque compte contient `email`, `password_hash` et `password_salt` (ainsi qu'un identifiant et la date de création). Le mot de passe est dérivé avec scrypt à partir du mot de passe combiné au poivre serveur; le sel aléatoire propre à chaque compte est stocké séparément. Le poivre reste dans `.env` et n'est jamais enregistré dans `db.json`.
+
+JSON Server est prévu pour le développement et les prototypes, pas pour exposer une base de comptes sur un réseau non fiable ou en production.

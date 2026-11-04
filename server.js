@@ -5,7 +5,7 @@ const { promisify } = require('node:util');
 const fs = require('node:fs');
 const path = require('node:path');
 const http = require('node:http');
-const { DatabaseSync } = require('node:sqlite');
+const { spawn } = require('node:child_process');
 
 const scryptAsync = promisify(scrypt);
 const ROOT = __dirname;
@@ -32,21 +32,27 @@ if (!pepper || Buffer.byteLength(pepper) < 32) {
   throw new Error('AUTH_PEPPER doit contenir au moins 32 octets. Configurez cette variable dans .env.');
 }
 
-const databasePath = path.resolve(process.env.DB_PATH || path.join(ROOT, 'data', 'users.sqlite'));
-fs.mkdirSync(path.dirname(databasePath), { recursive: true });
-const database = new DatabaseSync(databasePath);
-database.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    email TEXT NOT NULL UNIQUE COLLATE NOCASE,
-    password_hash TEXT NOT NULL,
-    password_salt TEXT NOT NULL,
-    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-  )
-`);
+const databasePath = path.resolve(process.env.JSON_DB_PATH || path.join(ROOT, 'db.json'));
+const dataServerPort = Number(process.env.JSON_SERVER_PORT || 3001);
+const dataServerUrl = `http://127.0.0.1:${dataServerPort}`;
+const dataServerEntry = path.join(ROOT, 'node_modules', 'json-server', 'lib', 'bin.js');
+let dataServerProcess;
 
-const findUser = database.prepare('SELECT id, email, password_hash, password_salt FROM users WHERE email = ?');
-const insertUser = database.prepare('INSERT INTO users (email, password_hash, password_salt) VALUES (?, ?, ?)');
+async function getUsers() {
+  const response = await fetch(`${dataServerUrl}/users`);
+  if (!response.ok) throw new Error(`JSON Server a répondu avec le statut ${response.status}.`);
+  return response.json();
+}
+
+async function saveUser(user) {
+  const response = await fetch(`${dataServerUrl}/users`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(user)
+  });
+  if (!response.ok) throw new Error(`Impossible d'enregistrer l'utilisateur (HTTP ${response.status}).`);
+  return response.json();
+}
 
 function sendJson(response, status, payload, headers = {}) {
   response.writeHead(status, {
@@ -136,23 +142,26 @@ async function handleApi(request, response, url) {
 
     const email = body.email.trim().toLowerCase();
     if (url.pathname === '/api/register') {
+      const users = await getUsers();
+      if (users.some(user => user.email.toLowerCase() === email)) {
+        sendJson(response, 409, { error: 'Un compte existe déjà avec cette adresse e-mail.' });
+        return;
+      }
+
       const salt = randomBytes(16);
       const passwordHash = await hashPassword(body.password, salt);
-      try {
-        const result = insertUser.run(email, passwordHash, salt.toString('hex'));
-        const setCookie = createSession(response, Number(result.lastInsertRowid));
-        sendJson(response, 201, { user: { email } }, { 'Set-Cookie': setCookie });
-      } catch (error) {
-        if (error.errcode === 2067) {
-          sendJson(response, 409, { error: 'Un compte existe déjà avec cette adresse e-mail.' });
-          return;
-        }
-        throw error;
-      }
+      const user = await saveUser({
+        email,
+        password_hash: passwordHash,
+        password_salt: salt.toString('hex'),
+        created_at: new Date().toISOString()
+      });
+      const setCookie = createSession(response, String(user.id));
+      sendJson(response, 201, { user: { email } }, { 'Set-Cookie': setCookie });
       return;
     }
 
-    const user = findUser.get(email);
+    const user = (await getUsers()).find(candidate => candidate.email.toLowerCase() === email);
     if (!user) {
       sendJson(response, 401, { error: 'Adresse e-mail ou mot de passe incorrect.' });
       return;
@@ -169,7 +178,7 @@ async function handleApi(request, response, url) {
 
   if (request.method === 'GET' && url.pathname === '/api/me') {
     const session = getSession(request);
-    const user = session && database.prepare('SELECT email FROM users WHERE id = ?').get(session.userId);
+    const user = session && (await getUsers()).find(candidate => String(candidate.id) === session.userId);
     sendJson(response, user ? 200 : 401, user ? { user } : { error: 'Non connecté.' });
     return;
   }
@@ -234,15 +243,50 @@ const server = http.createServer((request, response) => {
   serveStatic(request, response, url);
 });
 
+async function startDataServer() {
+  fs.mkdirSync(path.dirname(databasePath), { recursive: true });
+  if (!fs.existsSync(databasePath)) {
+    fs.writeFileSync(databasePath, `${JSON.stringify({ users: [] }, null, 2)}\n`, { flag: 'wx' });
+  }
+
+  dataServerProcess = spawn(process.execPath, [dataServerEntry, databasePath, '--host', '127.0.0.1', '--port', String(dataServerPort)], {
+    cwd: ROOT,
+    stdio: 'inherit'
+  });
+
+  let lastError;
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    if (dataServerProcess.exitCode !== null) {
+      throw new Error(`JSON Server s'est arrêté avec le code ${dataServerProcess.exitCode}.`);
+    }
+    try {
+      const response = await fetch(`${dataServerUrl}/users`, { signal: AbortSignal.timeout(500) });
+      if (response.ok) return;
+      lastError = new Error(`HTTP ${response.status}`);
+    } catch (error) {
+      lastError = error;
+    }
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+  throw new Error(`JSON Server ne répond pas sur ${dataServerUrl}. ${lastError?.message || ''}`);
+}
+
 const port = Number(process.env.PORT || 3000);
-server.listen(port, '0.0.0.0', () => {
-  console.log(`Site disponible sur http://localhost:${port}`);
-  console.log(`Base SQLite : ${databasePath}`);
+startDataServer().then(() => {
+  server.listen(port, '0.0.0.0', () => {
+    console.log(`Site disponible sur http://localhost:${port}`);
+    console.log(`API JSON Server : ${dataServerUrl}`);
+    console.log(`Base JSON : ${databasePath}`);
+  });
+}).catch(error => {
+  console.error(error);
+  dataServerProcess?.kill('SIGTERM');
+  process.exitCode = 1;
 });
 
 function shutdown() {
   server.close(() => {
-    database.close();
+    dataServerProcess?.kill('SIGTERM');
     process.exit(0);
   });
 }
