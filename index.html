@@ -14,11 +14,51 @@
     <button class="logout-button" id="logout-button" type="button"><span aria-hidden="true">↗</span> Déconnexion</button>
   </header>
   <main class="home-content">
-    <p class="eyebrow">VOTRE ESPACE PERSONNEL</p>
-    <div class="status-line"><span class="status-dot"></span> SESSION ACTIVE</div>
-    <h1>Vous êtes<br><em>connecté.</em></h1>
-    <p class="home-greeting" id="home-greeting">Bienvenue dans votre espace.</p>
-    <span class="home-number">01 / 01</span>
+    <section class="home-intro" aria-labelledby="home-title">
+      <p class="eyebrow">VOTRE ESPACE PERSONNEL</p>
+      <div class="status-line"><span class="status-dot"></span> SESSION ACTIVE</div>
+      <h1 id="home-title">Vos idées,<br><em>en atelier.</em></h1>
+      <p class="home-greeting" id="home-greeting">Bienvenue dans votre espace.</p>
+    </section>
+
+    <section class="articles-section" aria-labelledby="articles-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">LE CARNET DE L’ATELIER</p>
+          <h2 id="articles-title">Articles <span id="article-count">—</span></h2>
+        </div>
+        <button class="add-article-button" id="show-article-form" type="button">
+          <span aria-hidden="true">＋</span> Ajouter un article
+        </button>
+      </div>
+
+      <form class="article-form" id="article-form" hidden>
+        <div class="article-form-heading">
+          <div>
+            <p class="eyebrow">UNE NOUVELLE PAGE</p>
+            <h3>Créer un article</h3>
+          </div>
+          <button class="form-close-button" id="hide-article-form" type="button" aria-label="Fermer">×</button>
+        </div>
+        <label class="field">
+          <span>Titre</span>
+          <input id="article-title" name="title" type="text" maxlength="120" placeholder="Le titre de votre article" required>
+        </label>
+        <label class="field">
+          <span>Contenu</span>
+          <textarea id="article-content" name="content" rows="7" maxlength="20000" placeholder="Racontez votre idée…" required></textarea>
+        </label>
+        <p class="article-form-message" id="article-form-message" role="status" aria-live="polite"></p>
+        <div class="article-form-actions">
+          <button class="cancel-button" id="cancel-article" type="button">Annuler</button>
+          <button class="submit-button article-submit-button" id="save-article" type="submit">Publier l’article <span aria-hidden="true">↗</span></button>
+        </div>
+      </form>
+
+      <p class="articles-message" id="articles-message" role="status" aria-live="polite">Chargement des articles…</p>
+      <div class="article-list" id="article-list" aria-live="polite"></div>
+    </section>
+    <span class="home-number">01 / ATELIER</span>
   </main>
 </body>
 </html>

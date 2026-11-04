@@ -54,6 +54,22 @@ async function saveUser(user) {
   return response.json();
 }
 
+async function getArticles() {
+  const response = await fetch(`${dataServerUrl}/articles`);
+  if (!response.ok) throw new Error(`JSON Server a répondu avec le statut ${response.status}.`);
+  return response.json();
+}
+
+async function saveArticle(article) {
+  const response = await fetch(`${dataServerUrl}/articles`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(article)
+  });
+  if (!response.ok) throw new Error(`Impossible d'enregistrer l'article (HTTP ${response.status}).`);
+  return response.json();
+}
+
 function sendJson(response, status, payload, headers = {}) {
   response.writeHead(status, {
     'Content-Type': 'application/json; charset=utf-8',
@@ -126,6 +142,48 @@ function createSession(response, userId) {
 }
 
 async function handleApi(request, response, url) {
+  if (url.pathname === '/api/articles') {
+    if (!getSession(request)) {
+      sendJson(response, 401, { error: 'Non connecté.' });
+      return;
+    }
+
+    if (request.method === 'GET') {
+      const articles = await getArticles();
+      sendJson(response, 200, articles.filter(article => article.published !== false));
+      return;
+    }
+
+    if (request.method === 'POST') {
+      let body;
+      try {
+        body = await readJson(request);
+      } catch (error) {
+        if (!response.destroyed) sendJson(response, error.status || 400, { error: error.message });
+        return;
+      }
+
+      if (typeof body.title !== 'string' || typeof body.content !== 'string'
+        || !body.title.trim() || !body.content.trim()
+        || body.title.trim().length > 120 || body.content.trim().length > 20000) {
+        sendJson(response, 400, { error: 'Saisissez un titre (120 caractères max.) et un contenu (20 000 caractères max.).' });
+        return;
+      }
+
+      const article = await saveArticle({
+        title: body.title.trim(),
+        content: body.content.trim(),
+        published: true,
+        created_at: new Date().toISOString()
+      });
+      sendJson(response, 201, article);
+      return;
+    }
+
+    sendJson(response, 405, { error: 'Méthode non autorisée.' }, { Allow: 'GET, POST' });
+    return;
+  }
+
   if (request.method === 'POST' && (url.pathname === '/api/register' || url.pathname === '/api/login')) {
     let body;
     try {
@@ -246,7 +304,17 @@ const server = http.createServer((request, response) => {
 async function startDataServer() {
   fs.mkdirSync(path.dirname(databasePath), { recursive: true });
   if (!fs.existsSync(databasePath)) {
-    fs.writeFileSync(databasePath, `${JSON.stringify({ users: [] }, null, 2)}\n`, { flag: 'wx' });
+    fs.writeFileSync(databasePath, `${JSON.stringify({ users: [], articles: [] }, null, 2)}\n`, { flag: 'wx' });
+  } else {
+    const database = JSON.parse(fs.readFileSync(databasePath, 'utf8'));
+    let updated = false;
+    for (const collection of ['users', 'articles']) {
+      if (!Array.isArray(database[collection])) {
+        database[collection] = [];
+        updated = true;
+      }
+    }
+    if (updated) fs.writeFileSync(databasePath, `${JSON.stringify(database, null, 2)}\n`);
   }
 
   dataServerProcess = spawn(process.execPath, [dataServerEntry, databasePath, '--host', '127.0.0.1', '--port', String(dataServerPort)], {

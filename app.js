@@ -9,10 +9,119 @@ async function showHome() {
   const greeting = document.querySelector('#home-greeting');
   if (greeting) greeting.textContent = `Bienvenue, ${user.email}, dans votre espace.`;
 
+  setupArticles();
+
   document.querySelector('#logout-button')?.addEventListener('click', async () => {
     await fetch('/api/logout', { method: 'POST' });
     window.location.replace('/login.html');
   });
+}
+
+async function setupArticles() {
+  const list = document.querySelector('#article-list');
+  const status = document.querySelector('#articles-message');
+  const count = document.querySelector('#article-count');
+  const form = document.querySelector('#article-form');
+  const titleInput = document.querySelector('#article-title');
+  const contentInput = document.querySelector('#article-content');
+  const formMessage = document.querySelector('#article-form-message');
+  const saveButton = document.querySelector('#save-article');
+  const showFormButton = document.querySelector('#show-article-form');
+
+  function setFormVisible(visible) {
+    form.hidden = !visible;
+    showFormButton.hidden = visible;
+    if (visible) titleInput.focus();
+  }
+
+  function renderArticles(articles) {
+    list.replaceChildren();
+    count.textContent = String(articles.length).padStart(2, '0');
+    status.hidden = articles.length > 0;
+    status.textContent = articles.length ? '' : 'Aucun article pour le moment. Ajoutez votre première idée.';
+
+    articles.forEach(article => {
+      const card = document.createElement('article');
+      card.className = 'article-card';
+
+      const header = document.createElement('div');
+      header.className = 'article-card-meta';
+      const date = document.createElement('time');
+      date.className = 'article-date';
+      if (article.created_at) {
+        const parsedDate = new Date(article.created_at);
+        if (!Number.isNaN(parsedDate.getTime())) {
+          date.dateTime = parsedDate.toISOString();
+          date.textContent = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium' }).format(parsedDate);
+        }
+      }
+      const label = document.createElement('span');
+      label.className = 'article-label';
+      label.textContent = 'ARTICLE';
+      header.append(date, label);
+
+      const heading = document.createElement('h3');
+      heading.textContent = article.title;
+      const content = document.createElement('p');
+      content.className = 'article-card-content';
+      content.textContent = article.content;
+      card.append(header, heading, content);
+      list.append(card);
+    });
+  }
+
+  async function loadArticles() {
+    status.hidden = false;
+    status.textContent = 'Chargement des articles…';
+    try {
+      const response = await fetch('/api/articles');
+      if (response.status === 401) {
+        window.location.replace('/login.html');
+        return;
+      }
+      const articles = await response.json();
+      if (!response.ok) throw new Error(articles.error || 'Impossible de charger les articles.');
+      renderArticles(articles);
+    } catch (error) {
+      status.hidden = false;
+      status.textContent = error.message || 'Impossible de charger les articles.';
+    }
+  }
+
+  showFormButton.addEventListener('click', () => setFormVisible(true));
+  document.querySelector('#hide-article-form').addEventListener('click', () => setFormVisible(false));
+  document.querySelector('#cancel-article').addEventListener('click', () => {
+    form.reset();
+    formMessage.textContent = '';
+    setFormVisible(false);
+  });
+
+  form.addEventListener('submit', async event => {
+    event.preventDefault();
+    formMessage.textContent = '';
+    saveButton.disabled = true;
+    try {
+      const response = await fetch('/api/articles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: titleInput.value, content: contentInput.value })
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        formMessage.textContent = result.error || 'Impossible de publier cet article.';
+        return;
+      }
+      form.reset();
+      setFormVisible(false);
+      await loadArticles();
+    } catch {
+      formMessage.textContent = 'Impossible de joindre le serveur. Réessayez.';
+    } finally {
+      saveButton.disabled = false;
+    }
+  });
+
+  await loadArticles();
 }
 
 function setupAuthForm() {
