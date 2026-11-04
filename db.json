@@ -1,0 +1,21 @@
+{
+  "users": [
+    {
+      "id": "1",
+      "email": "impact@student.com",
+      "password_hash": "5bc9e45c419d1a4a2b841be8bb6aa43a32d28cf2bf9f008472d27cadf88f98b8612ec85fc3d15fd285d3f4534059e0c750df337db4da88632bd55ef9db29d9f1",
+      "password_salt": "bc5d57f4f76cd93b9301c4c752ba2fc3",
+      "created_at": "2026-11-04 16:54:16"
+    }
+  ],
+    "articles": [
+    {
+      "id": "1",
+      "title": "First Article",
+      "content": "1. La conception : du concept au document de design\n\nTout commence par une étincelle : une mécanique de gameplay originale, une ambiance ou une histoire.\n• L’idée de base : Définir le genre (plateforme, RPG, puzzle, FPS) et la proposition unique du jeu.\n• Le GDD (Game Design Document) : C'est la bible du projet. Ce document rassemble toutes les règles, les intentions artistiques, les personnages et la structure des niveaux.\n• Le prototypage : On construit une version très sommaire (parfois avec des cubes gris) pour vérifier si le cœur du jeu est amusant.\n\n2. Le développement : donner vie au monde\n\nUne fois les bases validées, les différentes disciplines entrent en danse :\n• La programmation : Le code qui fait fonctionner les règles, la physique et les interactions. On utilise des moteurs de jeu populaires comme Unity, Unreal Engine (idéal pour la 3D réaliste) ou Godot (open-source).\n• L’infographie et la modélisation : Création des décors, des personnages, des animations (2D ou 3D) et du Level Design (la conception architecturale des niveaux).\n• Le son et la musique (Sound Design) : Les bruitages des pas, les impacts, les musiques d'ambiance qui plongent le joueur dans l'univers.\n\n3. Les tests et l’équilibrage (QA)\n\nUn jeu n'est rien sans ses joueurs. Avant la sortie, le jeu passe par des phases de test :\n• Alpha et Bêta : Pour traquer les bugs critiques, ajuster la difficulté et s’assurer que les commandes répondent bien.\n• Règle d’or des créateurs : Commencer petit. Vouloir faire un \"GTA-like\" dès son premier projet mène presque toujours à l'abandon. Mieux vaut terminer un mini-jeu (type Flappy Bird ou un petit puzzle) que de laisser un grand projet dans un tiroir.\n\n4. La sortie et la vie du jeu\n\nLe jour du lancement n’est plus la fin du chemin :\n• Le marketing et la communication : Faire connaître le titre via les réseaux sociaux, la presse spécialisée ou des plateformes comme Steam.\n• Le suivi : Déploiement de patchs correctifs et de mises à jour pour corriger les derniers bugs rencontrés par la communauté.",
+      "published": true,
+      "created_at": "2026-11-04 16:54:16"
+    }
+  ],
+  "$schema": "./node_modules/json-server/schema.json"
+}
