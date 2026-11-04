@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "start": "node server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -18,6 +19,9 @@
     "url": "https://github.com/arthur0s-learning/leson_6/issues"
   },
   "homepage": "https://github.com/arthur0s-learning/leson_6#readme",
+  "engines": {
+    "node": ">=24"
+  },
   "dependencies": {
     "json-server": "^1.0.0-beta.15"
   }
